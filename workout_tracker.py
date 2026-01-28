@@ -311,6 +311,59 @@ hr {
   border-top: 1px solid rgba(255,255,255,0.10);
   margin: 1.2rem 0;
 }
+
+/* =========================
+   HARD OVERRIDES FOR INPUT TEXT
+   (place at END of CSS)
+   ========================= */
+
+/* Cover text inputs, number inputs, date inputs */
+[data-testid="stTextInput"] input,
+[data-testid="stNumberInput"] input,
+[data-testid="stDateInput"] input,
+[data-testid="stTextArea"] textarea {
+  color: #0B0F14 !important;        /* black text */
+  background: #FFFFFF !important;  /* white field */
+  -webkit-text-fill-color: #0B0F14 !important; /* fixes faint text on WebKit */
+}
+
+/* Placeholder text */
+[data-testid="stTextInput"] input::placeholder,
+[data-testid="stNumberInput"] input::placeholder,
+[data-testid="stDateInput"] input::placeholder,
+[data-testid="stTextArea"] textarea::placeholder {
+  color: rgba(0,0,0,0.45) !important;
+  -webkit-text-fill-color: rgba(0,0,0,0.45) !important;
+}
+
+/* Stepper + / - buttons on number input */
+[data-testid="stNumberInput"] button,
+[data-testid="stNumberInput"] svg {
+  color: #0B0F14 !important;
+  fill: #0B0F14 !important;
+  opacity: 0.75;
+}
+
+/* When focused */
+[data-testid="stTextInput"] input:focus,
+[data-testid="stNumberInput"] input:focus,
+[data-testid="stDateInput"] input:focus,
+[data-testid="stTextArea"] textarea:focus {
+  border: 1px solid rgba(0,0,0,0.35) !important;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.06) !important;
+  outline: none !important;
+}
+
+/* Sidebar specifically (extra guarantee) */
+[data-testid="stSidebar"] [data-testid="stTextInput"] input,
+[data-testid="stSidebar"] [data-testid="stNumberInput"] input,
+[data-testid="stSidebar"] [data-testid="stDateInput"] input,
+[data-testid="stSidebar"] [data-testid="stTextArea"] textarea {
+  color: #0B0F14 !important;
+  background: #FFFFFF !important;
+  -webkit-text-fill-color: #0B0F14 !important;
+}
+
 </style>
         """,
         unsafe_allow_html=True
