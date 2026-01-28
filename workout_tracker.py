@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import date
+from datetime import date, timedelta
 import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
@@ -105,7 +105,7 @@ def inject_css():
   color: #E8EEF7;
 }
 
-/* --- Reduce top padding a bit --- */
+/* --- container width/padding --- */
 .block-container {
   padding-top: 1.2rem;
   padding-bottom: 2.5rem;
@@ -120,10 +120,9 @@ p, label, .stMarkdown, .stText, .stCaption {
   color: rgba(232, 238, 247, 0.88);
 }
 
-/* --- Hide Streamlit default menu/footer for a more "product" look --- */
+/* --- Hide Streamlit default menu/footer (KEEP header so sidebar toggle works) --- */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
-header {visibility: hidden;}
 
 /* --- Card container --- */
 .card {
@@ -148,7 +147,7 @@ header {visibility: hidden;}
 }
 .hero-title {
   font-size: 34px;
-  font-weight: 750;
+  font-weight: 780;
   margin: 0;
   line-height: 1.1;
 }
@@ -158,7 +157,7 @@ header {visibility: hidden;}
   color: rgba(232, 238, 247, 0.82);
 }
 
-/* --- Metric “tiles” --- */
+/* --- Metric tiles --- */
 .metric-tile {
   border-radius: 16px;
   padding: 14px 14px;
@@ -172,7 +171,7 @@ header {visibility: hidden;}
 }
 .metric-value {
   font-size: 22px;
-  font-weight: 750;
+  font-weight: 780;
 }
 
 /* --- Buttons --- */
@@ -202,6 +201,20 @@ header {visibility: hidden;}
   background: rgba(255,255,255,0.05) !important;
 }
 
+/* --- Tabs styling (subtle) --- */
+.stTabs [data-baseweb="tab-list"] {
+  gap: 6px;
+}
+.stTabs [data-baseweb="tab"] {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 14px;
+  padding: 8px 14px;
+}
+.stTabs [aria-selected="true"] {
+  background: rgba(255,255,255,0.10);
+}
+
 /* --- Dataframe --- */
 [data-testid="stDataFrame"] {
   border-radius: 18px;
@@ -227,7 +240,7 @@ def hero():
 <div class="hero">
   <div class="hero-title">🏋️ LiftLog</div>
   <div class="hero-sub">
-    Log sets in seconds. Track volume trends over time. Stay consistent.
+    Log sets in seconds • Track total volume • Spot trends over time
   </div>
 </div>
         """,
@@ -251,23 +264,31 @@ def metric_tile(label: str, value: str):
 # App
 # -------------------------
 def main():
-    st.set_page_config(page_title="LiftLog • Workout Tracker", page_icon="🏋️", layout="wide")
+    st.set_page_config(
+        page_title="LiftLog • Workout Tracker",
+        page_icon="🏋️",
+        layout="wide",
+        initial_sidebar_state="expanded",  # ensures sidebar appears
+    )
 
     inject_css()
     init_db()
 
     # Header / Hero
     hero()
-    st.write("")  # spacing
+    st.write("")
 
-    # Sidebar: Add log
+    # Sidebar: Add log (UX upgraded)
     st.sidebar.markdown("## Add a Set")
-    st.sidebar.caption("Track exercise, sets, reps, and weight. Volume is calculated automatically.")
+    st.sidebar.caption("Quickly log a set. We’ll compute volume automatically.")
+
+    units = st.sidebar.radio("Units", options=["lbs", "kg"], horizontal=True, index=0)
     workout_date = st.sidebar.date_input("Date", value=date.today())
     exercise = st.sidebar.text_input("Exercise", placeholder="e.g., Bench Press")
-    sets = st.sidebar.number_input("Sets", min_value=1, max_value=50, value=3, step=1)
-    reps = st.sidebar.number_input("Reps", min_value=1, max_value=200, value=8, step=1)
-    weight = st.sidebar.number_input("Weight (lbs or kg)", min_value=0.0, max_value=2000.0, value=135.0, step=2.5)
+    c1, c2 = st.sidebar.columns(2)
+    sets = c1.number_input("Sets", min_value=1, max_value=50, value=3, step=1)
+    reps = c2.number_input("Reps", min_value=1, max_value=200, value=8, step=1)
+    weight = st.sidebar.number_input(f"Weight ({units})", min_value=0.0, max_value=2000.0, value=135.0, step=2.5)
 
     add_btn = st.sidebar.button("➕ Add Log", use_container_width=True)
 
@@ -279,80 +300,110 @@ def main():
             st.sidebar.success("Added!")
             st.rerun()
 
-    # Main: Data
+    st.sidebar.divider()
+    st.sidebar.caption("Tip: You can filter logs by exercise + date on the Logs tab.")
+
+    # Load data
     df = load_logs()
     if df.empty:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.subheader("No workouts yet")
-        st.write("Add your first entry from the sidebar to see trends and analytics.")
+        st.write("Add your first entry from the sidebar to unlock analytics.")
         st.markdown('</div>', unsafe_allow_html=True)
         return
 
-    # Metrics row (custom tiles, looks more “product”)
+    # Derived quick stats (no functionality change)
+    today = date.today()
+    last_7 = today - timedelta(days=6)
+
     total_volume = float(df["volume"].sum())
     total_sessions = int(df["workout_date"].nunique())
     total_entries = int(len(df))
     last_day = df["workout_date"].max()
 
-    m1, m2, m3, m4 = st.columns(4)
-    with m1:
-        metric_tile("Total Volume (All Time)", f"{total_volume:,.0f}")
-    with m2:
-        metric_tile("Training Days Logged", f"{total_sessions}")
-    with m3:
-        metric_tile("Total Logged Sets (Entries)", f"{total_entries}")
-    with m4:
-        metric_tile("Most Recent Log Date", f"{last_day}")
+    today_volume = float(df[df["workout_date"] == today]["volume"].sum())
+    last7_volume = float(df[df["workout_date"] >= last_7]["volume"].sum())
 
-    st.write("")
+    # Tabs “navigation”
+    tab_dashboard, tab_logs, tab_trends = st.tabs(["Dashboard", "Logs", "Trends"])
 
-    # Logs card
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("Logs")
+    with tab_dashboard:
+        m1, m2, m3, m4 = st.columns(4)
+        with m1:
+            metric_tile("Total Volume (All Time)", f"{total_volume:,.0f}")
+        with m2:
+            metric_tile("Training Days Logged", f"{total_sessions}")
+        with m3:
+            metric_tile("Volume (Last 7 Days)", f"{last7_volume:,.0f}")
+        with m4:
+            metric_tile("Volume (Today)", f"{today_volume:,.0f}")
 
-    fcol1, fcol2 = st.columns(2)
-    exercise_filter = fcol1.multiselect(
-        "Filter by exercise",
-        options=sorted(df["exercise"].unique().tolist()),
-        default=[]
-    )
-    date_min = fcol2.date_input("Show logs from date", value=min(df["workout_date"]))
+        st.write("")
 
-    filtered = df.copy()
-    filtered = filtered[filtered["workout_date"] >= date_min]
-    if exercise_filter:
-        filtered = filtered[filtered["exercise"].isin(exercise_filter)]
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.subheader("Quick insights")
+        top_ex = (
+            df.groupby("exercise", as_index=False)["volume"]
+            .sum()
+            .sort_values("volume", ascending=False)
+            .head(5)
+        )
+        if len(top_ex) > 0:
+            st.write("**Top exercises by total volume:**")
+            for _, row in top_ex.iterrows():
+                st.write(f"• {row['exercise']}: {row['volume']:,.0f}")
+        st.caption("Volume = sets × reps × weight. This is a simple but useful proxy for overall workload.")
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    show_cols = ["id", "workout_date", "exercise", "sets", "reps", "weight", "volume"]
-    st.dataframe(filtered[show_cols], use_container_width=True)
+    with tab_logs:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.subheader("Logs")
 
-    st.markdown("#### Delete a log entry")
-    del_c1, del_c2 = st.columns([2, 1])
-    del_id = del_c1.number_input("Log id", min_value=0, step=1, value=0, label_visibility="collapsed")
-    del_clicked = del_c2.button("🗑️ Delete", type="secondary", use_container_width=True)
+        fcol1, fcol2 = st.columns(2)
+        exercise_filter = fcol1.multiselect(
+            "Filter by exercise",
+            options=sorted(df["exercise"].unique().tolist()),
+            default=[]
+        )
+        date_min = fcol2.date_input("Show logs from date", value=min(df["workout_date"]))
 
-    if del_clicked:
-        if del_id == 0:
-            st.warning("Enter a valid log id (non-zero).")
-        else:
-            delete_log(int(del_id))
-            st.success(f"Deleted log id {int(del_id)}")
-            st.rerun()
+        filtered = df.copy()
+        filtered = filtered[filtered["workout_date"] >= date_min]
+        if exercise_filter:
+            filtered = filtered[filtered["exercise"].isin(exercise_filter)]
 
-    st.caption("Volume = sets × reps × weight. For bodyweight movements, use weight = 0 or your bodyweight.")
-    st.markdown('</div>', unsafe_allow_html=True)
+        show_cols = ["id", "workout_date", "exercise", "sets", "reps", "weight", "volume"]
+        st.dataframe(filtered[show_cols], use_container_width=True)
 
-    st.write("")
+        st.markdown("#### Delete a log entry")
+        del_c1, del_c2 = st.columns([2, 1])
+        del_id = del_c1.number_input("Log id", min_value=0, step=1, value=0, label_visibility="collapsed")
+        del_clicked = del_c2.button("🗑️ Delete", type="secondary", use_container_width=True)
 
-    # Trends card
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("Trends")
-    tcol1, tcol2 = st.columns(2)
-    with tcol1:
-        plot_daily_volume(filtered)
-    with tcol2:
-        plot_volume_by_exercise(filtered)
-    st.markdown('</div>', unsafe_allow_html=True)
+        if del_clicked:
+            if del_id == 0:
+                st.warning("Enter a valid log id (non-zero).")
+            else:
+                delete_log(int(del_id))
+                st.success(f"Deleted log id {int(del_id)}")
+                st.rerun()
+
+        st.caption("Tip: Keep logging consistently—trends become meaningful after ~1–2 weeks of data.")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with tab_trends:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.subheader("Trends")
+
+        # Reuse the same filtering logic as logs tab, but keep it simple:
+        tcol1, tcol2 = st.columns(2)
+        with tcol1:
+            plot_daily_volume(df)
+        with tcol2:
+            plot_volume_by_exercise(df)
+
+        st.caption("These charts use total volume to visualize workload trends over time.")
+        st.markdown('</div>', unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
