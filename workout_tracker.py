@@ -105,6 +105,46 @@ def inject_css():
   color: #E8EEF7;
 }
 
+/* --- Sidebar theme: ensure readability --- */
+[data-testid="stSidebar"] {
+  background: #0E141B !important;
+  border-right: 1px solid rgba(255,255,255,0.10) !important;
+}
+
+[data-testid="stSidebar"] * {
+  color: rgba(232, 238, 247, 0.92) !important;
+}
+
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] span,
+[data-testid="stSidebar"] .stCaption,
+[data-testid="stSidebar"] .stMarkdown {
+  color: rgba(232, 238, 247, 0.90) !important;
+}
+
+/* Inputs in sidebar */
+[data-testid="stSidebar"] input,
+[data-testid="stSidebar"] textarea {
+  background: rgba(255,255,255,0.06) !important;
+  border: 1px solid rgba(255,255,255,0.14) !important;
+  color: rgba(232, 238, 247, 0.95) !important;
+}
+
+/* Fix radio text specifically (lbs/kg) */
+[data-testid="stSidebar"] [role="radiogroup"] * {
+  color: rgba(232, 238, 247, 0.92) !important;
+}
+
+/* Make the 'Add Log' button readable */
+[data-testid="stSidebar"] .stButton>button {
+  background: rgba(255,255,255,0.10) !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
+}
+[data-testid="stSidebar"] .stButton>button:hover {
+  background: rgba(255,255,255,0.14) !important;
+}
+
 /* --- container width/padding --- */
 .block-container {
   padding-top: 1.2rem;
@@ -117,7 +157,7 @@ h1, h2, h3 {
   letter-spacing: -0.02em;
 }
 p, label, .stMarkdown, .stText, .stCaption {
-  color: rgba(232, 238, 247, 0.88);
+  color: rgba(232, 238, 247, 0.92);
 }
 
 /* --- Hide Streamlit default menu/footer (KEEP header so sidebar toggle works) --- */
