@@ -105,6 +105,49 @@ def inject_css():
   color: #E8EEF7;
 }
 
+/* --- FORCE readable input text (dark on light) --- */
+
+/* Text inside inputs */
+.stTextInput input,
+.stNumberInput input,
+.stDateInput input,
+.stTextArea textarea {
+  color: #0B0F14 !important;           /* near-black text */
+  background: #FFFFFF !important;     /* clean white input */
+  border: 1px solid rgba(0,0,0,0.15) !important;
+}
+
+/* Placeholder text */
+.stTextInput input::placeholder,
+.stNumberInput input::placeholder,
+.stDateInput input::placeholder,
+.stTextArea textarea::placeholder {
+  color: rgba(0,0,0,0.45) !important;  /* readable gray */
+}
+
+/* +/- steppers (number inputs) */
+.stNumberInput button {
+  color: #0B0F14 !important;
+}
+
+/* Focus state (subtle, professional) */
+.stTextInput input:focus,
+.stNumberInput input:focus,
+.stDateInput input:focus,
+.stTextArea textarea:focus {
+  outline: none !important;
+  border: 1px solid rgba(0,0,0,0.35) !important;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.06) !important;
+}
+
+/* Sidebar-specific override (important) */
+[data-testid="stSidebar"] input,
+[data-testid="stSidebar"] textarea {
+  color: #0B0F14 !important;
+  background: #FFFFFF !important;
+}
+
+
 /* --- Sidebar theme: ensure readability --- */
 [data-testid="stSidebar"] {
   background: #0E141B !important;
